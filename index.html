@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MPU6050 Tiempo Real</title>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // 🔥 CONFIG FIREBASE (la misma del ESP32)
+    const firebaseConfig = {
+      apiKey: "AIzaSyB_LjsytiBVljX3JclwjA7JbBwxTR-_a1k",
+      databaseURL: "https://proyecto-control-56808-default-rtdb.firebaseio.com/",
+      projectId: "proyecto-control-56808"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const mpuRef = ref(database, "mpu6050");
+
+    // Variables globales para la gráfica
+    window.labels = [];
+    window.dataMag = [];
+
+    onValue(mpuRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const time = new Date().toLocaleTimeString();
+
+      if (labels.length > 20) {
+        labels.shift();
+        dataMag.shift();
+      }
+
+      labels.push(time);
+      dataMag.push(data.Magnitud);
+
+      chart.update();
+
+      document.getElementById("ax").innerText = data.AccX.toFixed(3);
+      document.getElementById("ay").innerText = data.AccY.toFixed(3);
+      document.getElementById("az").innerText = data.AccZ.toFixed(3);
+    });
+  </script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+    }
+
+    h1 {
+      color: #38bdf8;
+    }
+
+    .values {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 20px;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      width: 150px;
+    }
+
+    canvas {
+      max-width: 800px;
+      margin: 30px auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>📈 MPU6050 – Gráfica en Tiempo Real</h1>
+
+  <div class="values">
+    <div class="box">AccX<br><b id="ax">0</b></div>
+    <div class="box">AccY<br><b id="ay">0</b></div>
+    <div class="box">AccZ<br><b id="az">0</b></div>
+  </div>
+
+  <canvas id="chart"></canvas>
+
+  <script>
+    const ctx = document.getElementById("chart").getContext("2d");
+
+    window.chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Magnitud de Aceleración",
+          data: dataMag,
+          borderWidth: 2,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
